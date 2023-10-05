@@ -88,7 +88,7 @@ namespace ClientSuspensionGUI
         public static RaceCar[] allCars;
         public static void CarSearch()
         {
-            allCars = FindObjectsOfType<RaceCar>();
+            allCars = Object.FindObjectsOfType<RaceCar>();
             for (int i = 0; i < allCars.Length; i++)
             {
                 if (!allCars[i].isNetworkCar)
@@ -145,6 +145,7 @@ namespace ClientSuspensionGUI
             if (_showGui1)
             {
                 windowRect = GUILayout.Window(0, windowRect, ClientGUI.ClientSusWindow, "Client Suspension", GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+                Refs.MyCar().getRigidbody.detectCollisions = true;
             }
         }
 

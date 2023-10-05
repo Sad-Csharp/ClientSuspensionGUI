@@ -87,7 +87,7 @@ namespace ClientSuspensionGUI
             GUILayout.Label("Down Keybind", style1);
             GUI.SetNextControlName("downControl");
             Main.Down = GUILayout.TextField(Main.Down, GUILayout.Width(100));
-            bool textBoxFocused2 = Main._controlCurrent == "downControl";
+            var textBoxFocused2 = Main._controlCurrent == "downControl";
             if (textBoxFocused2 && _eventCurrent.type == EventType.MouseDown)
             {
                 GUI.FocusControl(null);
@@ -96,7 +96,7 @@ namespace ClientSuspensionGUI
             {
                 Main.Down = _eventCurrent.keyCode.ToString();
                 PlayerPrefs.SetString("downKeyBind", Main.Down);
-                if (KeyCode.TryParse(PlayerPrefs.GetString("downKeyBind"), out KeyCode newKeyCode))
+                if (Enum.TryParse(PlayerPrefs.GetString("downKeyBind"), out KeyCode newKeyCode))
                 {
                     Main.downKey = newKeyCode;
                 }
@@ -198,7 +198,6 @@ namespace ClientSuspensionGUI
             else
             {
                 Debug.LogError("[Restoring Values]: Failed To Restore Suspension Values, They Don't Exist!");
-                return;
             }
         }
 

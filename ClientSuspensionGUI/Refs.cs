@@ -13,6 +13,15 @@ namespace ClientSuspensionGUIRefs
     {
         #region[LOCAL_PLAYER]
 
+        public static RaceCar MyCar()
+        {
+            return PlayerCarControl.instance
+                ? PlayerCarControl.instance.car
+                : GameObject.Find("CarPositionMarker").GetComponentInChildren<RaceCar>();
+        }
+
+
+
         public static string SteamID { get => Overlay.instance.localUniqId.ToString(); }
         public static PlayerCarControl PlayerCarControl { get => PlayerCarControl.instance; }
         public static Rigidbody LP_Rigidbody { get => LP_CARXCar.getRigidbody; }
@@ -34,10 +43,6 @@ namespace ClientSuspensionGUIRefs
         public static DriftController LP_DriftController { get => PlayerCarControl.car.GetComponentInParent<DriftController>(); }
 
 
-        #endregion
-
-        #region[NETWORK]
-        public static NetworkController NetworkController { get => FindObjectOfType<NetworkController>(); }
         #endregion
 
         #region[Day-Night/Light Scene Controllers]

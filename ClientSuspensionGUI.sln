@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.5.33502.453
+VisualStudioVersion = 17.6.33723.286
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientSuspensionGUI", "ClientSuspensionGUI.csproj", "{6099A151-A778-4A63-B1F2-82A556B1CEB2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientSuspensionGUI", "ClientSuspensionGUI\ClientSuspensionGUI.csproj", "{6099A151-A778-4A63-B1F2-82A556B1CEB2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,6 +17,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {1DEFAF6D-0061-44E2-B343-5DB5AF50200C}
+		SolutionGuid = {7799F645-C5E9-49D7-B8B7-593A99DFCAD8}
 	EndGlobalSection
 EndGlobal
