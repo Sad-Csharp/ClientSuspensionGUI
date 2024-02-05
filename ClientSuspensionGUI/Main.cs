@@ -1,129 +1,118 @@
-﻿using BepInEx;
-using BepInEx.Logging;
+﻿using System;
 using CarX;
-using ClientSuspensionGUIRefs;
-using HarmonyLib;
 using System.Collections;
-using System.IO;
+using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ZML.API;
 
 namespace ClientSuspensionGUI
 {
-    [BepInPlugin(GUID, MODNAME, VERSION)]
-    public class Main : BaseUnityPlugin
+    //[ZMLMod("plugin.revive.mod", "Suspension Mod", "2.1.2", "Mizar")] // pulled a you last night to have a friend test lol still no go :(
+    [ZMLMod("plugin.Suspension.mod", "Suspension Mod", "2.1.2", "Mizar")]
+    public class Main : BaseMod
     {
         #region[Declarations]
 
-        public const string
-            MODNAME = "ClientSuspensionGUI",
-            AUTHOR = "Mizar-Valid",
-            GUID = AUTHOR + "_" + MODNAME,
-            VERSION = "1.0.0";
-
-        internal readonly ManualLogSource log;
-        internal readonly Harmony harmony;
-        internal readonly Assembly assembly;
-        public readonly string modFolder;
-
-        /// <summary>
-        /// booleans
-        /// </summary>
         public static bool Front;
         public static bool Back;
         public static bool Together;
-        public static bool _showGui1;
-
-        /// <summary>
-        /// Used to store car suspension values to later restore!
-        /// </summary>
-        public static float IniFL;
-        public static float IniFR;
+        private static bool _showGui1;
+        
+        // Used to store CarxCar suspension values to later restore!
+        public static float IniFl;
+        public static float IniFr;
         public static float IniBL;
         public static float IniBR;
-
-        /// <summary>
-        /// Used to label input fields
-        /// </summary>
-        public static string Spring_Step = "0.02";
-        public static string Spring_Jump = "1";
-        public static string Spring_Min = "0.02";
-        public static string Spring_Max = "3";
-        public static string Spring_Jump_Speed = "0.1";
+        
+        // input field strings
+        public static string SpringStepString = "0.02";
+        public static string SpringJumpString = "1";
+        public static string SpringMinString = "0.02";
+        public static string SpringMaxString = "3";
         public static string Up = "Q";
         public static string Down = "E";
         public static string Jump = "Space";
         public static string Window = "Backspace";
-        public static string _controlCurrent;
+        public static string? ControlCurrent;
 
-        /// <summary>
-        /// Used to store values entered in our textfields
-        /// </summary>
-        public static float springStep;
-        public static float springJump;
-        public static float springMin;
-        public static float springMax;
-        public static float springjumpSpeed;
+        // input field stored values
+        public static float SpringStep;
+        public static float SpringJump;
+        public static float SpringMin;
+        public static float SpringMax;
+        private static Rect _windowRect = new Rect(0, 0, 350, 600);
+        private static readonly string[] SceneBlackList = { "Start", "Startup", "Starting", "Begin", "Load", "Loading", "SelectCar", "Empty", "vp_showroom" };
+        public static KeyCode WindowKey = KeyCode.Backspace;
+        public static KeyCode UpKey = KeyCode.Q;
+        public static KeyCode DownKey = KeyCode.E;
+        public static KeyCode JumpKey = KeyCode.Space;
+        private static Scene _scene1;
+        private static Wheel _fl;
+        private static Wheel _fr;
+        private static Wheel _bl;
+        private static Wheel _br;
 
-        /// <summary>
-        /// GUI/Black list
-        /// </summary>
-        public static Rect windowRect = new Rect(0, 0, 350, 600);
-        public static string[] SceneBlackList = { "Start", "Startup", "Starting", "Begin", "Load", "Loading", "SelectCar", "Empty", "vp_showroom" };
-        public static KeyCode windowKey = KeyCode.Backspace;
-        public static KeyCode upKey = KeyCode.Q;
-        public static KeyCode downKey = KeyCode.E;
-        public static KeyCode jumpKey = KeyCode.Space;
-        public static Scene scene1;
-
-        public static Car LCCar;
-        public static CARXCar LCXCar;
-        public static Wheel FrontLeft;
-        public static Wheel FrontRight;
-        public static Wheel BackLeft;
-        public static Wheel BackRight;
-        public static RaceCar car;
-        public static RaceCar[] allCars;
-        public static void CarSearch()
+        private static RaceCar CarSearch()
         {
-            allCars = Object.FindObjectsOfType<RaceCar>();
-            for (int i = 0; i < allCars.Length; i++)
+            return PlayerCarControl.instance
+                ? PlayerCarControl.instance.car
+                : GameObject.Find("CarPositionMarker").GetComponent<RaceCar>();
+        }
+
+        private static Wheel FrontLeft
+        {
+            get
             {
-                if (!allCars[i].isNetworkCar)
-                {
-                    car = allCars[i];
-                    LCCar = allCars[i].GetComponentInParent<Car>();
-                    LCXCar = allCars[i].GetComponentInParent<CARXCar>();
-                    FrontLeft = LCXCar.GetWheel(WheelIndex.FrontLeft);
-                    FrontRight = LCXCar.GetWheel(WheelIndex.FrontRight);
-                    BackLeft = LCXCar.GetWheel(WheelIndex.RearLeft);
-                    BackRight = LCXCar.GetWheel(WheelIndex.RearRight);
-                    return;
-                }
+                if (CarSearch() == null) return _fl;
+                var car = CarSearch().GetComponent<CARXCar>();
+                _fl = car.GetWheel(WheelIndex.FrontLeft);
+                return _fl;
+            }
+        }
+
+
+        private static Wheel FrontRight
+        {
+            get
+            {
+                if (CarSearch() == null) return _fr;
+                var car = CarSearch().GetComponent<CARXCar>();
+                _fr = car.GetWheel(WheelIndex.FrontRight);
+                return _fr;
+            }
+        }
+
+        private static Wheel BackRight
+        {
+            get
+            {
+                if (CarSearch() == null) return _br;
+                var car = CarSearch().GetComponent<CARXCar>();
+                _br = car.GetWheel(WheelIndex.RearRight);
+                return _br;
+            }
+        }
+
+        private static Wheel BackLeft
+        {
+            get
+            {
+                if (CarSearch() == null) return _bl;
+                var car = CarSearch().GetComponent<CARXCar>();
+                _bl = car.GetWheel(WheelIndex.RearLeft);
+                return _bl;
             }
         }
 
         #endregion
 
-        public Main()
-        {
-            log = Logger;
-            harmony = new Harmony(GUID);
-            assembly = Assembly.GetExecutingAssembly();
-            modFolder = Path.GetDirectoryName(assembly.Location);
-        }
-
-        public void Awake()
-        {
-
-        }
-
         public void Start()
         {
+            NetSync.ProcessPacket += NetSync.HandleSync;
             GetPlayerPrefs();
-            windowRect = CenterWindow(windowRect);
+            _windowRect = CenterWindow(_windowRect);
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -144,202 +133,267 @@ namespace ClientSuspensionGUI
         {
             if (_showGui1)
             {
-                windowRect = GUILayout.Window(0, windowRect, ClientGUI.ClientSusWindow, "Client Suspension", GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-                Refs.MyCar().getRigidbody.detectCollisions = true;
+                _windowRect = GUILayout.Window(0, _windowRect, ClientGUI.ClientSusWindow, "Client Suspension",
+                    GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
             }
         }
 
         public void Update()
         {
-            if (SceneBlackList.Contains(scene1.name) == false)
+            NetSync.Update();
+            if (SceneBlackList.Contains(_scene1.name) == false)
             {
-                if (Input.GetKey(downKey))
+                if (Input.GetKey(DownKey))
                 {
-                    CarSearch();
-                    if (Together == true)
+                    var frontLeft = FrontLeft;
+                    var frontRight = FrontRight;
+                    var backLeft = BackLeft;
+                    var backRight = BackRight;
+
+                    if (Together)
                     {
                         Front = false;
                         Back = false;
-                        FrontLeft.maxSpringLen -= springStep;
+                        frontLeft.maxSpringLen -= SpringStep;
 
-                        if (FrontLeft.maxSpringLen < springMin)
-                        { FrontLeft.maxSpringLen = springMin; }
+                        if (frontLeft.maxSpringLen < SpringMin)
+                        {
+                            frontLeft.maxSpringLen = SpringMin;
+                        }
 
-                        FrontRight.maxSpringLen -= springStep;
+                        frontRight.maxSpringLen -= SpringStep;
 
-                        if (FrontRight.maxSpringLen < springMin)
-                        { FrontRight.maxSpringLen = springMin; }
+                        if (frontRight.maxSpringLen < SpringMin)
+                        {
+                            frontRight.maxSpringLen = SpringMin;
+                        }
 
-                        BackLeft.maxSpringLen -= springStep;
+                        backLeft.maxSpringLen -= SpringStep;
 
-                        if (BackLeft.maxSpringLen < springMin)
-                        { BackLeft.maxSpringLen = springMin; }
+                        if (backLeft.maxSpringLen < SpringMin)
+                        {
+                            backLeft.maxSpringLen = SpringMin;
+                        }
 
-                        BackRight.maxSpringLen -= springStep;
+                        backRight.maxSpringLen -= SpringStep;
 
-                        if (BackRight.maxSpringLen < springMin)
-                        { BackRight.maxSpringLen = springMin; }
+                        if (backRight.maxSpringLen < SpringMin)
+                        {
+                            backRight.maxSpringLen = SpringMin;
+                        }
+
+                        NetSync.SendSuspensionData(frontLeft, frontRight, backLeft,
+                            backRight);
                     }
-                    else if (Front == true)
+                    else if (Front)
                     {
                         Together = false;
                         Back = false;
-                        FrontLeft.maxSpringLen -= springStep;
+                        frontLeft.maxSpringLen -= SpringStep;
 
-                        if (FrontLeft.maxSpringLen < springMin)
+                        if (frontLeft.maxSpringLen < SpringMin)
                         {
-                            FrontLeft.maxSpringLen = springMin;
+                            frontLeft.maxSpringLen = SpringMin;
                         }
 
-                        FrontRight.maxSpringLen -= springStep;
+                        frontRight.maxSpringLen -= SpringStep;
 
-                        if (FrontRight.maxSpringLen < springMin)
+                        if (frontRight.maxSpringLen < SpringMin)
                         {
-                            FrontRight.maxSpringLen = springMin;
+                            frontRight.maxSpringLen = SpringMin;
                         }
+                        NetSync.SendSuspensionData(frontLeft, frontRight, backLeft,
+                            backRight);
                     }
-                    else if (Back == true)
+                    else if (Back)
                     {
                         Together = false;
                         Front = false;
 
-                        BackLeft.maxSpringLen -= springStep;
+                        backLeft.maxSpringLen -= SpringStep;
 
-                        if (BackLeft.maxSpringLen < springMin)
+                        if (backLeft.maxSpringLen < SpringMin)
                         {
-                            BackLeft.maxSpringLen = springMin;
+                            backLeft.maxSpringLen = SpringMin;
                         }
 
-                        BackRight.maxSpringLen -= springStep;
+                        backRight.maxSpringLen -= SpringStep;
 
-                        if (BackRight.maxSpringLen < springMin)
+                        if (backRight.maxSpringLen < SpringMin)
                         {
-                            BackRight.maxSpringLen = springMin;
+                            backRight.maxSpringLen = SpringMin;
                         }
+                        NetSync.SendSuspensionData(frontLeft, frontRight, backLeft,
+                            backRight);
                     }
                 }
-                if (Input.GetKey(upKey))
+
+                if (Input.GetKey(UpKey))
                 {
-                    CarSearch();
-                    if (Together == true)
+                    var left = FrontLeft;
+                    var right = FrontRight;
+                    var bLeft = BackLeft;
+                    var bRight = BackRight;
+
+                    if (Together)
                     {
                         Front = false;
                         Back = false;
 
-                        FrontLeft.maxSpringLen += springStep;
+                        left.maxSpringLen += SpringStep;
 
-                        if (FrontLeft.maxSpringLen > springMax)
-                        { FrontLeft.maxSpringLen = springMax; }
+                        if (left.maxSpringLen > SpringMax)
+                        {
+                            left.maxSpringLen = SpringMax;
+                        }
 
-                        FrontRight.maxSpringLen += springStep;
+                        right.maxSpringLen += SpringStep;
 
-                        if (FrontRight.maxSpringLen > springMax)
-                        { FrontRight.maxSpringLen = springMax; }
+                        if (right.maxSpringLen > SpringMax)
+                        {
+                            right.maxSpringLen = SpringMax;
+                        }
 
-                        BackLeft.maxSpringLen += springStep;
+                        bLeft.maxSpringLen += SpringStep;
 
-                        if (BackLeft.maxSpringLen > springMax)
-                        { BackLeft.maxSpringLen = springMax; }
+                        if (bLeft.maxSpringLen > SpringMax)
+                        {
+                            bLeft.maxSpringLen = SpringMax;
+                        }
 
-                        BackRight.maxSpringLen += springStep;
+                        bRight.maxSpringLen += SpringStep;
 
-                        if (BackRight.maxSpringLen > springMax)
-                        { BackRight.maxSpringLen = springMax; }
+                        if (bRight.maxSpringLen > SpringMax)
+                        {
+                            bRight.maxSpringLen = SpringMax;
+                        }
+                        NetSync.SendSuspensionData(left, right, bLeft,
+                            bRight);
                     }
-                    else if (Front == true)
+                    else if (Front)
                     {
                         Together = false;
                         Back = false;
 
-                        FrontLeft.maxSpringLen += springStep;
+                        left.maxSpringLen += SpringStep;
 
-                        if (FrontLeft.maxSpringLen > springMax)
-                        { FrontLeft.maxSpringLen = springMax; }
+                        if (left.maxSpringLen > SpringMax)
+                        {
+                            left.maxSpringLen = SpringMax;
+                        }
 
-                        FrontRight.maxSpringLen += springStep;
+                        right.maxSpringLen += SpringStep;
 
-                        if (FrontRight.maxSpringLen > springMax)
-                        { FrontRight.maxSpringLen = springMax; }
+                        if (right.maxSpringLen > SpringMax)
+                        {
+                            right.maxSpringLen = SpringMax;
+                        }
+                        NetSync.SendSuspensionData(left, right, bLeft,
+                            bRight);
                     }
-                    else if (Back == true)
+                    else if (Back)
                     {
                         Together = false;
                         Front = false;
 
-                        BackLeft.maxSpringLen += springStep;
+                        bLeft.maxSpringLen += SpringStep;
 
-                        if (BackLeft.maxSpringLen > springMax)
-                        { BackLeft.maxSpringLen = springMax; }
+                        if (bLeft.maxSpringLen > SpringMax)
+                        {
+                            bLeft.maxSpringLen = SpringMax;
+                        }
 
-                        BackRight.maxSpringLen += springStep;
+                        bRight.maxSpringLen += SpringStep;
 
-                        if (BackRight.maxSpringLen > springMax)
-                        { BackRight.maxSpringLen = springMax; }
+                        if (bRight.maxSpringLen > SpringMax)
+                        {
+                            bRight.maxSpringLen = SpringMax;
+                        }
+                        NetSync.SendSuspensionData(left, right, bLeft,
+                            bRight);
                     }
                 }
-                if (Input.GetKeyDown(jumpKey))
+
+                if (Input.GetKeyDown(JumpKey))
                 {
-                    CarSearch();
                     StartCoroutine(UP());
                 }
             }
-            if (Input.GetKeyDown(windowKey))
+
+            if (Input.GetKeyDown(WindowKey))
             {
                 _showGui1 = !_showGui1;
             }
         }
 
+
         IEnumerator UP()
         {
-            if (Together == true)
+            var left = FrontLeft;
+            var right = FrontRight;
+            var bLeft = BackLeft;
+            var bRight = BackRight;
+
+            if (Together)
             {
                 Front = false;
                 Back = false;
-                FrontLeft.maxSpringLen = springJump;
-                FrontRight.maxSpringLen = springJump;
-                BackRight.maxSpringLen = springJump;
-                BackLeft.maxSpringLen = springJump;
+                left.maxSpringLen = SpringJump;
+                right.maxSpringLen = SpringJump;
+                bRight.maxSpringLen = SpringJump;
+                bLeft.maxSpringLen = SpringJump;
             }
-            else if (Front == true)
+            else if (Front)
             {
                 Together = false;
                 Back = false;
-                FrontLeft.maxSpringLen = springJump;
-                FrontRight.maxSpringLen = springJump;
+                _fl.maxSpringLen = SpringJump;
+                _fr.maxSpringLen = SpringJump;
             }
-            else if (Back == true)
+            else if (Back)
             {
                 Together = false;
                 Front = false;
-                BackLeft.maxSpringLen = springJump;
-                BackRight.maxSpringLen = springJump;
+                _bl.maxSpringLen = SpringJump;
+                _br.maxSpringLen = SpringJump;
             }
 
             yield return new WaitForSeconds(0.1f);
 
-            if (Together == true)
+            if (Together)
             {
                 Front = false;
                 Back = false;
-                FrontLeft.maxSpringLen = springJump;
-                FrontRight.maxSpringLen = springJump;
-                BackRight.maxSpringLen = springJump;
-                BackLeft.maxSpringLen = springJump;
+                left.maxSpringLen = SpringJump;
+                right.maxSpringLen = SpringJump;
+                bRight.maxSpringLen = SpringJump;
+                bLeft.maxSpringLen = SpringJump;
             }
-            else if (Front == true)
+            else if (Front)
             {
                 Together = false;
                 Back = false;
-                FrontLeft.maxSpringLen = springJump;
-                FrontRight.maxSpringLen = springJump;
+                left.maxSpringLen = SpringJump;
+                right.maxSpringLen = SpringJump;
             }
-            else if (Back == true)
+            else if (Back)
             {
                 Together = false;
                 Front = false;
-                BackLeft.maxSpringLen = springJump;
-                BackRight.maxSpringLen = springJump;
+                bLeft.maxSpringLen = SpringJump;
+                bRight.maxSpringLen = SpringJump;
             }
+
+            try
+            {
+                NetSync.SendSuspensionData(left, right,
+                    bLeft, bRight);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(e.Source);
+            }
+
             ClientGUI.RestoreValues();
         }
 
@@ -357,32 +411,38 @@ namespace ClientSuspensionGUI
 
         public static void GetPlayerPrefs()
         {
-            if (PlayerPrefs.HasKey("springStep") || PlayerPrefs.HasKey("springJump") || PlayerPrefs.HasKey("springMin") || PlayerPrefs.HasKey("springMax") || PlayerPrefs.HasKey("springJumpSpeed") || PlayerPrefs.HasKey("upKey") || PlayerPrefs.HasKey("downKey") || PlayerPrefs.HasKey("jumpKey") || PlayerPrefs.HasKey("windowKey"))
+            if (PlayerPrefs.HasKey("springStep") || PlayerPrefs.HasKey("springJump") ||
+                PlayerPrefs.HasKey("springMin") || PlayerPrefs.HasKey("springMax") ||
+                PlayerPrefs.HasKey("springJumpSpeed") || PlayerPrefs.HasKey("upKey") || PlayerPrefs.HasKey("downKey") ||
+                PlayerPrefs.HasKey("jumpKey") || PlayerPrefs.HasKey("windowKey"))
             {
-                Spring_Step = PlayerPrefs.GetFloat("springStep").ToString();
-                Spring_Jump = PlayerPrefs.GetFloat("springJump").ToString();
-                Spring_Min = PlayerPrefs.GetFloat("springMin").ToString();
-                Spring_Max = PlayerPrefs.GetFloat("springMax").ToString();
-                Spring_Jump_Speed = PlayerPrefs.GetFloat("springJumpSpeed").ToString();
-                if (KeyCode.TryParse(PlayerPrefs.GetString("upKeyBind"), out KeyCode keyCode))
+                SpringStepString = PlayerPrefs.GetFloat("springStep").ToString(CultureInfo.CurrentCulture);
+                SpringJumpString = PlayerPrefs.GetFloat("springJump").ToString(CultureInfo.CurrentCulture);
+                SpringMinString = PlayerPrefs.GetFloat("springMin").ToString(CultureInfo.CurrentCulture);
+                SpringMaxString = PlayerPrefs.GetFloat("springMax").ToString(CultureInfo.CurrentCulture);
+                SpringJumpSpeed = PlayerPrefs.GetFloat("springJumpSpeed").ToString(CultureInfo.CurrentCulture);
+                if (Enum.TryParse(PlayerPrefs.GetString("upKeyBind"), out KeyCode keyCode))
                 {
-                    upKey = keyCode;
-                    Up = upKey.ToString();
+                    UpKey = keyCode;
+                    Up = UpKey.ToString();
                 }
-                if (KeyCode.TryParse(PlayerPrefs.GetString("downKeyBind"), out KeyCode keyCode1))
+
+                if (Enum.TryParse(PlayerPrefs.GetString("downKeyBind"), out KeyCode keyCode1))
                 {
-                    downKey = keyCode1;
-                    Down = downKey.ToString();
+                    DownKey = keyCode1;
+                    Down = DownKey.ToString();
                 }
-                if (KeyCode.TryParse(PlayerPrefs.GetString("jumpKeyBind"), out KeyCode keyCode2))
+
+                if (Enum.TryParse(PlayerPrefs.GetString("jumpKeyBind"), out KeyCode keyCode2))
                 {
-                    jumpKey = keyCode2;
-                    Jump = jumpKey.ToString();
+                    JumpKey = keyCode2;
+                    Jump = JumpKey.ToString();
                 }
-                if (KeyCode.TryParse(PlayerPrefs.GetString("windowKeyBind"), out KeyCode keyCode3))
+
+                if (Enum.TryParse(PlayerPrefs.GetString("windowKeyBind"), out KeyCode keyCode3))
                 {
-                    windowKey = keyCode3;
-                    Window = windowKey.ToString();
+                    WindowKey = keyCode3;
+                    Window = WindowKey.ToString();
                 }
             }
         }

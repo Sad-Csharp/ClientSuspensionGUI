@@ -2,6 +2,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <GameDir>E:\SteamLibrary\steamapps\common\CarX Drift Racing Online</GameDir>
+    <GameDir>E:\SteamLibrary\steamapps\common\CarX Drift Racing Online</GameDir> // ignore the fuck outta this file. its literally useless but due to me making this with VSC i've no clue how to get rid of this without my assembly erroring out!
   </PropertyGroup>
 </Project>

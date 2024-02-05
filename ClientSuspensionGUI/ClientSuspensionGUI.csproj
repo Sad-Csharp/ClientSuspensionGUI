@@ -15,6 +15,7 @@
     <Deterministic>true</Deterministic>
     <LangVersion>default</LangVersion>
     <Nullable>enable</Nullable>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -53,6 +54,9 @@
     </Reference>
     <Reference Include="Driver">
       <HintPath>E:\SteamLibrary\steamapps\common\CarX Drift Racing Online\Drift Racing Online_Data\Managed\Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="SmartFox2X">
+      <HintPath>E:\SteamLibrary\steamapps\common\CarX Drift Racing Online\Drift Racing Online_Data\Managed\SmartFox2X.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -467,26 +471,24 @@
       <HintPath>E:\SteamLibrary\steamapps\common\CarX Drift Racing Online\Drift Racing Online_Data\Managed\UnityUIExtensions.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="ZML.API">
+      <HintPath>E:\SteamLibrary\steamapps\common\CarX Drift Racing Online\ZML\core\ZML.API.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientGUI.cs" />
     <Compile Include="Main.cs" />
+    <Compile Include="NetSync.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Refs.cs" />
-    <None Include="GameDir.targets" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>xcopy "$(TargetDir)" "$(GameDir)\kino\plugins\$(ProjectName)\" /q /s /y /i
-start steam://rungameid/635260</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>wmic process where name='Drift Racing Online.exe' delete</PreBuildEvent>
-  </PropertyGroup>
   <ItemGroup>
     <None Include="packager.bat">
       <Visible>false</Visible>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="GameDir.targets" />
+  </ItemGroup>
 </Project>
